@@ -56,6 +56,7 @@ struct el_token_stream
 {
 	struct el_token * tokens;
 	int num_tokens;
+	int current_token;
 };
 
 void el_token_stream_delete(struct el_token_stream * stream);

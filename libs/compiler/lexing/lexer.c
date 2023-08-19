@@ -79,9 +79,9 @@ static void el_lex_line(char const * line, struct el_token_stream * stream)
 
 	int length = (int)strlen(line);
 	int start_i = 0;
-	for(int i = 0; i < length; ++i)
+	for(int i = 0; i < length + 1; ++i)
 	{
-		char c = line[i];
+		char c = (i < length ? line[i] : '\n');
 
 		if(token_idx >= MAX_TOKEN_LENGTH)
 		{
@@ -172,8 +172,9 @@ struct el_token_stream el_lex_file(struct el_text_file * f)
 {
 	assert(f);
 	struct el_token_stream stream = {
+		.tokens = fmalloc(MAX_NUM_TOKENS_PER_FILE * sizeof(struct el_token)), // TODO - Change to variable size array
 		.num_tokens = 0,
-		.tokens = fmalloc(MAX_NUM_TOKENS_PER_FILE * sizeof(struct el_token)) // TODO - Change to variable size array
+		.current_token = 0
 	};
 
 	char * next_line = NULL;
