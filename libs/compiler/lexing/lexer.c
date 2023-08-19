@@ -52,7 +52,7 @@ static char const * token_strings[] = {
 
 static_assert(ARRAY_SIZE(token_strings) == el_token_type_count, "Lexer's token_strings array is not up-to-date with el_token_type");
 
-static void el_lexer_push_token(struct el_token_stream * stream, int type, el_string source)
+static void el_push_token(struct el_token_stream * stream, int type, el_string source)
 {
 	if(stream->num_tokens >= MAX_NUM_TOKENS_PER_FILE)
 	{
@@ -67,7 +67,7 @@ static void el_lexer_push_token(struct el_token_stream * stream, int type, el_st
 	stream->tokens[stream->num_tokens++] = token;
 }
 
-static void el_lexer_lex_line(char const * line, struct el_token_stream * stream)
+static void el_lex_line(char const * line, struct el_token_stream * stream)
 {
 	bool forming_string = false;
 
@@ -85,7 +85,7 @@ static void el_lexer_lex_line(char const * line, struct el_token_stream * stream
 
 		if(token_idx >= MAX_TOKEN_LENGTH)
 		{
-			fprintf(stderr, "Failed to lex line, token greater than max length: %d", MAX_TOKEN_LENGTH);
+			fprintf(stderr, "Failed to lex line, token greater than max length: %d\n", MAX_TOKEN_LENGTH);
 			return;
 		}
 
@@ -123,14 +123,14 @@ static void el_lexer_lex_line(char const * line, struct el_token_stream * stream
 			if(token_idx > 0)
 			{
 				printf("Token: %s   %d\n", token_buf, token_type);
-				el_lexer_push_token(stream, token_type, el_string_new(token_buf, -1));
+				el_push_token(stream, token_type, el_string_new(token_buf, -1));
 			}
 
 			// Not all delimiters form tokens (e.g. whitespace is ignored)
 			if(delim_type != el_NONE)
 			{
 				printf("Token: %c   %d\n", c, delim_type);
-				el_lexer_push_token(stream, delim_type, el_string_new(&c, 1));
+				el_push_token(stream, delim_type, el_string_new(&c, 1));
 			}
 
 			// Reset token buffer ready to build next token
@@ -143,7 +143,7 @@ static void el_lexer_lex_line(char const * line, struct el_token_stream * stream
 			{
 				forming_string = false;
 				printf("String: %s\n", token_buf);
-				el_lexer_push_token(stream, el_STRING_LITERAL, el_string_new(token_buf, -1));
+				el_push_token(stream, el_STRING_LITERAL, el_string_new(token_buf, -1));
 
 				// Reset token buffer ready to build next token
 				token_buf[0] = '\0';
@@ -168,7 +168,7 @@ static void el_lexer_lex_line(char const * line, struct el_token_stream * stream
 	}
 }
 
-struct el_token_stream el_lexer_lex_file(struct el_text_file * f)
+struct el_token_stream el_lex_file(struct el_text_file * f)
 {
 	assert(f);
 	struct el_token_stream stream = {
@@ -182,9 +182,9 @@ struct el_token_stream el_lexer_lex_file(struct el_text_file * f)
 	{
 		printf("Line: %s\n", line);
 
-		el_lexer_lex_line(line, &stream);
+		el_lex_line(line, &stream);
 
-		el_lexer_push_token(&stream, el_END_LINE, el_string_new("\n", 1));
+		el_push_token(&stream, el_END_LINE, el_string_new("\n", 1));
 
 		line = strtok_s(NULL, "\n", &next_line);
 	}

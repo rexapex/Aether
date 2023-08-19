@@ -24,7 +24,6 @@ struct el_text_file el_text_file_new(el_string path)
 		}
 
 		// +1 for the null terminator
-		//f.contents = el_string_reserve(length);
 		f.contents = el_string_new(NULL, length);
 
 		// Seek back to start of file

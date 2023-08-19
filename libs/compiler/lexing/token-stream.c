@@ -6,7 +6,7 @@ void el_token_stream_delete(struct el_token_stream * stream)
 	{
 		for(int i = 0; i < stream->num_tokens; ++i)
 		{
-			ffree(stream->tokens[i].source);
+			el_string_delete(stream->tokens[i].source);
 		}
 
 		ffree(stream->tokens);
