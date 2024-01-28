@@ -10,6 +10,11 @@ static void el_ast_print_indent(int indent)
 	}
 }
 
+static void el_ast_print_expr(struct el_ast_expr * expression)
+{
+
+}
+
 static void el_ast_print_statement_list(struct el_ast_statement_list * list, int indent)
 {
 	for(int i = 0; i < list->num_statements; ++i)
@@ -58,11 +63,11 @@ static void el_ast_print_statement_list(struct el_ast_statement_list * list, int
 			el_ast_print_statement_list(&s->function_definition.code_block, indent + 1);
 			break;
 		case el_AST_NODE_FOR_STATEMENT:
-			printf("for %s %s in %s\n", s->for_statement.index_var_name, s->for_statement.value_var_name, s->for_statement.list_name);
+	//		printf("for %s %s in %s\n", s->for_statement.index_var_name, s->for_statement.value_var_name, s->for_statement.list_name);
 			el_ast_print_statement_list(&s->for_statement.code_block, indent + 1);
 			break;
 		case el_AST_NODE_IF_STATEMENT:
-			printf("if %d\n", s->if_statement.expression.todo);
+			/*printf("if %d\n", s->if_statement.expression.todo);
 			el_ast_print_statement_list(&s->if_statement.code_block, indent + 1);
 			for(int j = 0; j < s->if_statement.num_elif_statements; ++j)
 			{
@@ -75,7 +80,7 @@ static void el_ast_print_statement_list(struct el_ast_statement_list * list, int
 				el_ast_print_indent(indent);
 				printf("else\n");
 				el_ast_print_statement_list(s->if_statement.else_statement, indent + 1);
-			}
+			}*/
 			break;
 		case el_AST_NODE_ASSIGNMENT:
 			printf("=\n");
@@ -99,9 +104,71 @@ static void el_ast_var_type_delete(struct el_ast_var_type * t)
 	}
 }
 
+static void el_ast_expression_delete(struct el_ast_expression * e);
+
+static void el_ast_expression_list_delete(struct el_ast_expression_list * l)
+{
+	for(int i = 0; i < l->num_expressions; ++i)
+	{
+		el_ast_expression_delete(&l->expressions[i]);
+	}
+	ffree(l->expressions);
+	free(l);
+}
+
 static void el_ast_expression_delete(struct el_ast_expression * e)
 {
-	// TODO
+	if(e)
+	{
+		switch(e->type)
+		{
+		case el_AST_EXPR_EQUALS:
+		case el_AST_EXPR_GREATER_THAN:
+		case el_AST_EXPR_LESS_THAN:
+		case el_AST_EXPR_GEQUALS:
+		case el_AST_EXPR_LEQUALS:
+		case el_AST_EXPR_BOOLEAN_AND:
+		case el_AST_EXPR_BOOLEAN_OR:
+		case el_AST_EXPR_ADD:
+		case el_AST_EXPR_SUB:
+		case el_AST_EXPR_MUL:
+		case el_AST_EXPR_DIV:
+		case el_AST_EXPR_DOT:
+		case el_AST_EXPR_FUNCTION_CALL:
+		case el_AST_EXPR_SLICE_INDEX:
+			el_ast_expression_delete(e->binary_op.lhs);
+			el_ast_expression_delete(e->binary_op.rhs);
+			ffree(e->binary_op.lhs);
+			ffree(e->binary_op.rhs);
+			break;
+		case el_AST_EXPR_NUMBER_LITERAL:
+			el_string_delete(e->number_literal);
+			break;
+		case el_AST_EXPR_STRING_LITERAL:
+			el_string_delete(e->number_literal);
+			break;
+		case el_AST_EXPR_SLICE_LITERAL:
+		case el_AST_EXPR_ARGUMENTS:
+			el_ast_expression_list_delete(e->expression_list);
+			break;
+		case el_AST_EXPR_IDENTIFIER:
+			el_string_delete(e->identifier);
+			break;
+		default:
+			assert(false);
+			break;
+		}
+	}
+}
+
+static void el_ast_parameter_list_delete(struct el_ast_parameter_list * l)
+{
+	for(int i = 0; i < l->num_parameters; ++i)
+	{
+		el_string_delete(l->parameters[i].name);
+		el_ast_var_type_delete(&l->parameters[i].type);
+	}
+	ffree(l->parameters);
 }
 
 static void el_ast_statement_list_delete(struct el_ast_statement_list * list);
@@ -124,27 +191,38 @@ static void el_ast_statement_delete(struct el_ast_statement * s)
 		el_string_delete(s->function_definition.name);
 		el_ast_var_type_delete(&s->function_definition.return_type);
 		el_ast_statement_list_delete(&s->function_definition.code_block);
+		el_ast_parameter_list_delete(&s->function_definition.parameter_list);
 		break;
 	case el_AST_NODE_FOR_STATEMENT:
 		el_string_delete(s->for_statement.index_var_name);
 		el_string_delete(s->for_statement.value_var_name);
-		el_string_delete(s->for_statement.list_name);
+		el_ast_expression_delete(&s->for_statement.range);
 		el_ast_statement_list_delete(&s->for_statement.code_block);
 		break;
 	case el_AST_NODE_IF_STATEMENT:
 		el_ast_expression_delete(&s->if_statement.expression);
-		el_ast_statement_delete(&s->if_statement.code_block);
-		el_ast_statement_delete(s->if_statement.else_statement);
+		el_ast_statement_list_delete(&s->if_statement.code_block);
+		el_ast_statement_list_delete(s->if_statement.else_statement);
 		ffree(s->if_statement.else_statement);
 		for(int i = 0; i < s->if_statement.num_elif_statements; ++i)
 		{
-			el_ast_expression_delete(&s->if_statement.elif_statements[i]);
+			el_ast_expression_delete(&s->if_statement.elif_statements[i].expression);
 			el_ast_statement_list_delete(&s->if_statement.elif_statements[i].code_block);
 		}
 		ffree(s->if_statement.elif_statements);
 		break;
 	case el_AST_NODE_ASSIGNMENT:
-		// TODO
+		el_ast_expression_delete(&s->assignment.lhs);
+		el_ast_expression_delete(&s->assignment.rhs);
+		break;
+	case el_AST_NODE_RETURN_STATEMENT:
+		el_ast_expression_delete(&s->return_statement.expression);
+		break;
+	case el_AST_NODE_EXPRESSION:
+		el_ast_expression_delete(&s->expression);
+		break;
+	default:
+		assert(false);
 		break;
 	}
 }

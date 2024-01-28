@@ -16,11 +16,15 @@ inline el_string el_string_new(char const * c, int length)
 	}
 
 	char * s = fmalloc(length + sizeof length + 1);
+	if(!s) {
+		return NULL;
+	}
+
 	*s = length;
 	char * contents = s + sizeof length;
 
 	if(c != NULL) {
-		memcpy(contents, c, length + 1);
+		memcpy(contents, c, (size_t)length + 1);
 	}
 
 	contents[length] = '\0';

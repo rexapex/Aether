@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
-struct el_text_file el_text_file_new(el_string path)
+struct el_text_file el_text_file_new(char const * path)
 {
 	struct el_text_file f;
 	f.contents = NULL;
-	f.path = el_string_new(path, el_string_length(path));
+	f.path = el_string_new(path, -1);
 
 	FILE * fptr;
 	errno_t err = fopen_s(&fptr, path, "r");

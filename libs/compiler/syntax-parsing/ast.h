@@ -9,6 +9,38 @@ enum el_ast_statement_type
 	el_AST_NODE_FOR_STATEMENT,
 	el_AST_NODE_IF_STATEMENT,
 	el_AST_NODE_ASSIGNMENT,
+	el_AST_NODE_RETURN_STATEMENT,
+	el_AST_NODE_EXPRESSION
+};
+
+enum el_ast_expression_type
+{
+	el_AST_EXPR_EQUALS,
+	el_AST_EXPR_GREATER_THAN,
+	el_AST_EXPR_LESS_THAN,
+	el_AST_EXPR_GEQUALS,
+	el_AST_EXPR_LEQUALS,
+
+	el_AST_EXPR_BOOLEAN_AND,
+	el_AST_EXPR_BOOLEAN_OR,
+
+	el_AST_EXPR_ADD,
+	el_AST_EXPR_SUB,
+	el_AST_EXPR_MUL,
+	el_AST_EXPR_DIV,
+
+	el_AST_EXPR_DOT,
+
+	el_AST_EXPR_FUNCTION_CALL,
+	el_AST_EXPR_SLICE_INDEX,
+
+	el_AST_EXPR_NUMBER_LITERAL,
+	el_AST_EXPR_STRING_LITERAL,
+	el_AST_EXPR_SLICE_LITERAL,
+
+	el_AST_EXPR_ARGUMENTS,
+
+	el_AST_EXPR_IDENTIFIER,
 };
 
 struct el_ast_statement_list
@@ -35,9 +67,32 @@ struct el_ast_var_decl
 	struct el_ast_var_type type;
 };
 
+struct el_ast_expression;
+
+struct el_ast_expression_list
+{
+	struct el_ast_expression * expressions;
+	int max_num_expressions;
+	int num_expressions;
+};
+
 struct el_ast_expression
 {
-	int todo;
+	int type;
+	union
+	{
+		el_string number_literal;
+		el_string string_literal;
+		el_string identifier;
+
+		struct el_ast_expression_list * expression_list;
+
+		struct
+		{
+			struct el_ast_expression * lhs;
+			struct el_ast_expression * rhs;
+		} binary_op;
+	};
 };
 
 struct el_ast_data_block
@@ -48,10 +103,17 @@ struct el_ast_data_block
 	int num_var_declarations;
 };
 
+struct el_ast_parameter_list
+{
+	struct el_ast_var_decl * parameters;
+	int max_num_parameters;
+	int num_parameters;
+};
+
 struct el_ast_function_definition
 {
 	el_string name;
-	// TODO - Parameters
+	struct el_ast_parameter_list parameter_list;
 	struct el_ast_var_type return_type;
 	struct el_ast_statement_list code_block;
 };
@@ -60,7 +122,7 @@ struct el_ast_for_statement
 {
 	el_string index_var_name;
 	el_string value_var_name;
-	el_string list_name;
+	struct el_ast_expression range;
 	struct el_ast_statement_list code_block;
 };
 
@@ -80,11 +142,15 @@ struct el_ast_if_statement
 	int num_elif_statements;
 };
 
-// TODO
 struct el_ast_assignment
 {
-	int lhs;
-	int rhs;
+	struct el_ast_expression lhs;
+	struct el_ast_expression rhs;
+};
+
+struct el_ast_return_statement
+{
+	struct el_ast_expression expression;
 };
 
 struct el_ast_statement
@@ -98,6 +164,8 @@ struct el_ast_statement
 		struct el_ast_for_statement for_statement;
 		struct el_ast_if_statement if_statement;
 		struct el_ast_assignment assignment;
+		struct el_ast_return_statement return_statement;
+		struct el_ast_expression expression;
 	};
 };
 

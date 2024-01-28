@@ -45,6 +45,9 @@ static char const * token_strings[] = {
 	".",		// el_DOT_OPERATOR
 	",",		// el_COMMA_SEPARATOR
 
+	"or",		// el_BOOLEAN_OR
+	"and",		// el_BOOLEAN_AND
+
 	"+",		// el_PLUS_OPERATOR
 	"-",		// el_MINUS_OPERATOR
 	"*",		// el_MULTIPLY_OPERATOR
@@ -183,6 +186,12 @@ struct el_token_stream el_lex_file(struct el_text_file * f)
 		.num_tokens = 0,
 		.current_token = 0
 	};
+
+	if(!stream.tokens)
+	{
+		fprintf(stderr, "Failed to allocate tokens list\n");
+		return stream;
+	}
 
 	char * next_line = NULL;
 	char * line = strtok_s(f->contents, "\n", &next_line);
