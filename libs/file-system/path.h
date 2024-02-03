@@ -3,7 +3,7 @@
 #include <containers/string.h>
 #include <allocators/fmalloc.h>
 
-inline el_string el_combine_paths(el_string * p1, el_string * p2)
+static inline el_string el_combine_paths(el_string * p1, el_string * p2)
 {
 	return NULL;
 //	assert(p1 && p2);
@@ -16,7 +16,7 @@ inline el_string el_combine_paths(el_string * p1, el_string * p2)
 //#endif
 }
 
-inline el_string el_filename(el_string * path)
+static inline el_string el_filename(el_string * path)
 {
 	return NULL;
 	//assert(path && path->data);

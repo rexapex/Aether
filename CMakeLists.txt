@@ -22,7 +22,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 include(build-dependencies)
 
 # Build internal libraries
+EL_BUILD_LIB_ALLOCATORS()
 EL_BUILD_LIB_COMPILER()
+EL_BUILD_LIB_CONTAINERS()
 EL_BUILD_LIB_FILE_SYSTEM()
 
 # Build apps

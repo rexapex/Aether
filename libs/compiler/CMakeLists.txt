@@ -19,4 +19,6 @@ EL_INCLUDE_LIBS(el_lib_compiler)
 include(link-dependencies)
 
 # Link dependencies
+EL_LINK_LIB_ALLOCATORS(el_lib_compiler)
+EL_LINK_LIB_CONTAINERS(el_lib_compiler)
 EL_LINK_LIB_FILE_SYSTEM(el_lib_compiler)
