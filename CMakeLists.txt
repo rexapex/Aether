@@ -9,7 +9,7 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project("ether-language" C)
+project("aether-language" C)
 
 # Add preprocessor definitions
 if(${CMAKE_SYSTEM_NAME} STREQUAL Windows OR ${CMAKE_SYSTEM_NAME} STREQUAL MSYS)
@@ -28,4 +28,4 @@ EL_BUILD_LIB_CONTAINERS()
 EL_BUILD_LIB_FILE_SYSTEM()
 
 # Build apps
-add_subdirectory(apps/ether-c)
+add_subdirectory(apps/aether-c)

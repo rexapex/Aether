@@ -1,4 +1,4 @@
-# CMakeList.txt : CMake project for ether-language, include source and define
+# CMakeList.txt : CMake project for aether-language, include source and define
 # project specific logic here.
 #
 
