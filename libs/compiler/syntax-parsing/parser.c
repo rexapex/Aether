@@ -792,7 +792,7 @@ static struct el_token * el_lookahead(struct el_token_stream * token_stream)
 {
 	if(token_stream->current_token >= token_stream->num_tokens)
 	{
-		printf("Failed to get lookahead, ran out of tokens");
+		printf("Failed to get lookahead, ran out of tokens\n");
 		return NULL;
 	}
 
@@ -803,7 +803,7 @@ static bool el_is_lookahead(struct el_token_stream * token_stream, int type)
 {
 	if(token_stream->current_token >= token_stream->num_tokens)
 	{
-		printf("Failed to check lookahead type, ran out of tokens");
+		printf("Failed to check lookahead type, ran out of tokens\n");
 		return false;
 	}
 

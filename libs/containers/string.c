@@ -16,7 +16,7 @@ el_string el_string_new(char const * c, int length)
 		return NULL;
 	}
 
-	*s = length;
+	*(int *)s = length;
 	char * contents = s + sizeof length;
 
 	if(c != NULL)
@@ -45,7 +45,7 @@ el_string el_string_inplace_new(char * restrict dst, int dst_size, char const * 
 		return NULL;
 	}
 
-	*dst = length;
+	*(int *)dst = length;
 	char * contents = dst + sizeof length;
 
 	if(c != NULL)
@@ -68,13 +68,14 @@ void el_string_delete(el_string s)
 int el_string_length(el_string s)
 {
 	assert(s);
-	return *(s - sizeof(int));
+	return *(int *)(s - sizeof(int));
 }
 
 int el_string_byte_size(el_string s)
 {
 	assert(s);
-	return *(s - sizeof(int)) + sizeof(int) + 1;
+	// If size is >= maxint - sizeof(int) then this is undefined behaviour as byte size will not fit in int
+	return *(int *)(s - sizeof(int)) + sizeof(int) + 1;
 }
 
 bool el_string_equals(el_string s1, el_string s2)
@@ -88,7 +89,7 @@ void el_string_shrink(el_string s, int length)
 	assert(s);
 	if(length >= 0 && length < el_string_length(s))
 	{
-		*(s - sizeof length) = length;
+		*(int *)(s - sizeof length) = length;
 		s[length] = '\0';
 	}
 }
