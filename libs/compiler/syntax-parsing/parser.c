@@ -521,6 +521,7 @@ static int el_parse_optional_type(struct el_token_stream * token_stream, struct 
 	int err = 0;
 	var_type->is_native = true;
 	var_type->native_type = el_NONE;
+	var_type->num_dimensions = 0;
 	if(
 		el_is_lookahead(token_stream, el_IDENTIFIER) ||
 		el_is_lookahead(token_stream, el_INT_TYPE) ||

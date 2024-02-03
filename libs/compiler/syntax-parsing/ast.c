@@ -67,6 +67,11 @@ static void el_ast_print_var_type(struct el_ast_var_type * t)
 	{
 		printf("%s", t->custom_type);
 	}
+
+	for(int j = 0; j < t->num_dimensions; ++j)
+	{
+		printf("[]");
+	}
 }
 
 static void el_ast_print_expr(struct el_ast_expression * e, int indent);
@@ -153,10 +158,6 @@ static void el_ast_print_statement_list(struct el_ast_statement_list * list, int
 			struct el_ast_var_type * type = &s->function_definition.return_type;
 			el_ast_print_var_type(type);
 
-			for(int j = 0; j < type->num_dimensions; ++j)
-			{
-				printf("[]");
-			}
 			printf("\n");
 			el_ast_print_statement_list(&s->function_definition.code_block, indent + indent_incr);
 			break;
@@ -185,6 +186,7 @@ static void el_ast_print_statement_list(struct el_ast_statement_list * list, int
 
 void el_ast_print(struct el_ast * ast)
 {
+	assert(ast);
 	printf("\n\n===\nAST\n===\n\n");
 	el_ast_print_statement_list(&ast->root, 0);
 }
