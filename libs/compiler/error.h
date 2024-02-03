@@ -6,7 +6,8 @@ enum el_error
 	el_ALLOCATION_ERROR,
 
 	// Lexing errors
-	// TODO - Start at 1000
+	el_EXCEEDED_TOKENS_LIMIT_LEX_ERROR = 1000,
+	el_EXCEEDED_TOKEN_LENGTH_LIMIT_LEX_ERROR,
 
 	// Parsing errors
 	el_MATCH_TOKEN_PARSE_ERROR = 2000,

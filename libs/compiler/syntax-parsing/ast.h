@@ -1,4 +1,5 @@
 #pragma once
+#include <allocators/linear-allocator.h>
 #include <compiler/lexing/token-stream.h>
 #include <containers/string.h>
 
@@ -171,6 +172,7 @@ struct el_ast_statement
 
 struct el_ast
 {
+	struct el_linear_allocator allocator;
 	struct el_ast_statement_list root;
 };
 
