@@ -19,6 +19,7 @@ enum el_token_type
 
 	el_FNC_KEYWORD,
 	el_DAT_KEYWORD,
+	el_LET_KEYWORD,
 	el_RET_KEYWORD,
 	el_FOR_KEYWORD,
 	el_IN_KEYWORD,
@@ -32,8 +33,8 @@ enum el_token_type
 	el_PARENTHESIS_OPEN,
 	el_PARENTHESIS_CLOSE,
 
-	el_SLICE_START,
-	el_SLICE_END,
+	el_LIST_START,
+	el_LIST_END,
 
 	el_ASSIGN_OPERATOR,
 	el_DOT_OPERATOR,
@@ -53,8 +54,12 @@ enum el_token_type
 	el_LEQUALS_COMPARATOR,
 	el_GEQUALS_COMPARATOR,
 
+	el_RETURNS_OPERATOR,
+
 	el_token_type_count
 };
+
+extern char const * token_strings[el_token_type_count];
 
 struct el_token
 {

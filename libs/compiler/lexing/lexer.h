@@ -1,5 +1,4 @@
 #pragma once
-#include "token-stream.h"
 
 struct el_text_file;
 

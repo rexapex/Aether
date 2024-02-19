@@ -55,6 +55,7 @@ static int el_parse_data_block_statement(struct el_token_stream * token_stream, 
 static int el_parse_optional_type(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_var_type * var_type);
 static int el_parse_type(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_var_type * var_type);
 
+static int el_parse_local_identifier(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression);
 static int el_parse_complex_identifier(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression);
 static int el_parse_complex_identifier_inner(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression);
 
@@ -154,9 +155,15 @@ static int el_parse_statement(struct el_token_stream * token_stream, struct el_l
 	}
 	else
 	{
-		// Statements which are valid within code blocks are also valid at file scope
-		err = err || el_parse_code_block_statement(token_stream, allocator, list);
+		struct el_token * lookahead = el_lookahead(token_stream);
+		fprintf(stderr, "Expected global statement (fn/struct), got %s\n", lookahead ? lookahead->source : "<no more tokens>");
+		return el_EXPECTED_GLOBAL_STATEMENT_PARSE_ERROR;
 	}
+	//else
+	//{
+	//	// Statements which are valid within code blocks are also valid at file scope
+	//	err = err || el_parse_code_block_statement(token_stream, allocator, list);
+	//}
 	return err;
 }
 
@@ -175,7 +182,8 @@ static int el_parse_function(struct el_token_stream * token_stream, struct el_li
 
 	err = err || el_match_token(token_stream, el_IDENTIFIER);
 	err = err || el_parse_parameter_list(token_stream, allocator, &function_definition->parameter_list);
-	err = err || el_parse_optional_type(token_stream, allocator, &function_definition->return_type);
+	err = err || el_match_token(token_stream, el_RETURNS_OPERATOR);
+	err = err || el_parse_type(token_stream, allocator, &function_definition->return_type);
 	err = err || el_parse_code_block(token_stream, allocator, &function_definition->code_block);
 	return err;
 }
@@ -221,7 +229,7 @@ static int el_parse_parameter(struct el_token_stream * token_stream, struct el_l
 	if(!var_decl->name)
 		return el_ALLOCATION_ERROR;
 	err = err || el_match_token(token_stream, el_IDENTIFIER);
-	err = err || el_parse_optional_type(token_stream, allocator, &var_decl->type);
+	err = err || el_parse_type(token_stream, allocator, &var_decl->type);
 	return err;
 }
 
@@ -263,33 +271,40 @@ static int el_parse_code_block_statement(struct el_token_stream * token_stream, 
 	DEBUG_PRODUCTION("el_parse_code_block_statement");
 	int err = 0;
 	assert(list->num_statements < list->max_num_statements);
-	if(el_is_lookahead(token_stream, el_FOR_KEYWORD))
+	if(el_is_lookahead(token_stream, el_LET_KEYWORD))
+	{
+		err = err || el_match_token(token_stream, el_LET_KEYWORD);
+		int statement_index = list->num_statements++;
+		struct el_ast_statement * statement = &list->statements[statement_index];
+		statement->type = el_AST_NODE_ASSIGNMENT;
+		err = err || el_parse_local_identifier(token_stream, allocator, &statement->assignment.lhs);
+
+		// TODO - Set identifier's meta data to parsed type
+		struct el_ast_var_type dummy_type;
+		err = err || el_parse_optional_type(token_stream, allocator, &dummy_type);
+
+		err = err || el_parse_assignment(token_stream, allocator, &statement->assignment.rhs);
+	}
+	else if(el_is_lookahead(token_stream, el_RET_KEYWORD))
+	{
+		err = err || el_match_token(token_stream, el_RET_KEYWORD);
+		int statement_index = list->num_statements++;
+		list->statements[statement_index].type = el_AST_NODE_RETURN_STATEMENT;
+		err = err || el_parse_expr(token_stream, allocator, &list->statements[statement_index].return_statement.expression);
+	}
+	/*else if(el_is_lookahead(token_stream, el_FOR_KEYWORD))
 	{
 		err = err || el_parse_for_statement(token_stream, allocator, list);
-	}
+	}*/
 	else if(el_is_lookahead(token_stream, el_IF_KEYWORD))
 	{
 		err = err || el_parse_if_statement(token_stream, allocator, list);
 	}
-	else if(el_is_lookahead(token_stream, el_RET_KEYWORD))
-	{
-		int statement_index = list->num_statements++;
-		err = err || el_match_token(token_stream, el_RET_KEYWORD);
-		list->statements[statement_index].type = el_AST_NODE_RETURN_STATEMENT;
-		err = err || el_parse_expr(token_stream, allocator, &list->statements[statement_index].return_statement.expression);
-	}
 	else
 	{
-		int statement_index = list->num_statements++;
-		list->statements[statement_index].type = el_AST_NODE_EXPRESSION;
-		err = err || el_parse_complex_identifier(token_stream, allocator, &list->statements[statement_index].expression);
-		if(el_is_lookahead(token_stream, el_ASSIGN_OPERATOR))
-		{
-			// Move the identifier node into the lhs of an assignment node
-			list->statements[statement_index].assignment.lhs = list->statements[statement_index].expression;
-			list->statements[statement_index].type = el_AST_NODE_ASSIGNMENT;
-			err = err || el_parse_assignment(token_stream, allocator, &list->statements[statement_index].assignment.rhs);
-		}
+		struct el_token * lookahead = el_lookahead(token_stream);
+		fprintf(stderr, "Expected code block statement (let/return/if), got %s\n", lookahead ? lookahead->source : "<no more tokens>");
+		return el_EXPECTED_BLOCK_STATEMENT_PARSE_ERROR;
 	}
 	return err;
 }
@@ -536,6 +551,13 @@ static int el_parse_type(struct el_token_stream * token_stream, struct el_linear
 {
 	DEBUG_PRODUCTION("el_parse_type");
 	int err = 0;
+	var_type->num_dimensions = 0;
+	while(el_is_lookahead(token_stream, el_LIST_START) && err == 0)
+	{
+		++var_type->num_dimensions;
+		err = err || el_match_token(token_stream, el_LIST_START);
+	}
+
 	if(el_is_lookahead(token_stream, el_IDENTIFIER))
 	{
 		var_type->is_native = false;
@@ -561,15 +583,23 @@ static int el_parse_type(struct el_token_stream * token_stream, struct el_linear
 		fprintf(stderr, "Expected a type, got %d %s\n", token_stream->tokens[token_stream->current_token].type, token_stream->tokens[token_stream->current_token].source);
 		return el_EXPECTED_TYPE_PARSE_ERROR;
 	}
-	
-	// Parse multiple slice open & close tokens to support multi-dimensional slices
-	var_type->num_dimensions = 0;
-	while(el_is_lookahead(token_stream, el_SLICE_START) && err == 0)
+
+	for(int i = 0; i < var_type->num_dimensions; ++i)
 	{
-		var_type->num_dimensions++;
-		err = err || el_match_token(token_stream, el_SLICE_START);
-		err = err || el_match_token(token_stream, el_SLICE_END);
+		err = err || el_match_token(token_stream, el_LIST_END);
 	}
+	return err;
+}
+
+static int el_parse_local_identifier(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression)
+{
+	DEBUG_PRODUCTION("el_parse_local_identifier");
+	int err = 0;
+	expression->type = el_AST_EXPR_IDENTIFIER;
+	expression->identifier = el_copy_lookahead(token_stream, allocator);
+	if(!expression->identifier)
+		return el_ALLOCATION_ERROR;
+	err = err || el_match_token(token_stream, el_IDENTIFIER);
 	return err;
 }
 
@@ -577,11 +607,7 @@ static int el_parse_complex_identifier(struct el_token_stream * token_stream, st
 {
 	DEBUG_PRODUCTION("el_parse_complex_identifier");
 	int err = 0;
-	expression->type = el_AST_EXPR_IDENTIFIER;
-	expression->identifier = el_copy_lookahead(token_stream, allocator);
-	if(!expression->identifier)
-		return el_ALLOCATION_ERROR;
-	err = err || el_match_token(token_stream, el_IDENTIFIER);
+	err = err || el_parse_local_identifier(token_stream, allocator, expression);
 	err = err || el_parse_complex_identifier_inner(token_stream, allocator, expression);
 	return err;
 }
@@ -590,12 +616,12 @@ static int el_parse_complex_identifier_inner(struct el_token_stream * token_stre
 {
 	DEBUG_PRODUCTION("el_parse_complex_identifier_inner");
 	int err = 0;
-	if(el_is_lookahead(token_stream, el_SLICE_START))
+	if(el_is_lookahead(token_stream, el_LIST_START))
 	{
-		err = err || el_convert_to_binary_op(allocator, expression, el_AST_EXPR_SLICE_INDEX);
-		err = err || el_match_token(token_stream, el_SLICE_START);
+		err = err || el_convert_to_binary_op(allocator, expression, el_AST_EXPR_LIST_INDEX);
+		err = err || el_match_token(token_stream, el_LIST_START);
 		err = err || el_parse_expr(token_stream, allocator, expression->binary_op.rhs);
-		err = err || el_match_token(token_stream, el_SLICE_END);
+		err = err || el_match_token(token_stream, el_LIST_END);
 	}
 	else if(el_is_lookahead(token_stream, el_PARENTHESIS_OPEN))
 	{
@@ -607,18 +633,14 @@ static int el_parse_complex_identifier_inner(struct el_token_stream * token_stre
 	{
 		err = err || el_convert_to_binary_op(allocator, expression, el_AST_EXPR_DOT);
 		err = err || el_match_token(token_stream, el_DOT_OPERATOR);
-		expression->binary_op.rhs->type = el_AST_EXPR_IDENTIFIER;
-		expression->binary_op.rhs->identifier = el_copy_lookahead(token_stream, allocator);
-		if(!expression->binary_op.rhs->identifier)
-			return el_ALLOCATION_ERROR;
-		err = err || el_match_token(token_stream, el_IDENTIFIER);
+		err = err || el_parse_local_identifier(token_stream, allocator, expression->binary_op.rhs);
 	}
 	else
 	{
 		// NOTE - This is not an error condition
 		return err;
 	}
-	// Recurse into fn s.t. slice indexes, function calls, and dot operations can be chained
+	// Recurse into fn s.t. list indexes, function calls, and dot operations can be chained
 	err = err || el_parse_complex_identifier_inner(token_stream, allocator, expression->binary_op.rhs);
 	return err;
 }
@@ -721,12 +743,12 @@ static int el_parse_factor_expr(struct el_token_stream * token_stream, struct el
 		err = err || el_parse_expr(token_stream, allocator, expression);
 		err = err || el_match_token(token_stream, el_PARENTHESIS_CLOSE);
 	}
-	else if(el_is_lookahead(token_stream, el_SLICE_START))
+	else if(el_is_lookahead(token_stream, el_LIST_START))
 	{
-		err = err || el_new_expr_list(allocator, expression, el_AST_EXPR_SLICE_LITERAL);
-		err = err || el_match_token(token_stream, el_SLICE_START);
+		err = err || el_new_expr_list(allocator, expression, el_AST_EXPR_LIST_LITERAL);
+		err = err || el_match_token(token_stream, el_LIST_START);
 		err = err || el_parse_arguments(token_stream, allocator, expression->expression_list);
-		err = err || el_match_token(token_stream, el_SLICE_END);
+		err = err || el_match_token(token_stream, el_LIST_END);
 	}
 	else
 	{
@@ -784,7 +806,7 @@ static int el_match_token(struct el_token_stream * token_stream, int type)
 		return 0;
 	}
 
-	fprintf(stderr, "Failed to match token at lookahead index %d: expected %d, got %d\n", token_stream->current_token, type, lookahead);
+	fprintf(stderr, "Failed to match token at lookahead index %d: expected %s, got %s\n", token_stream->current_token, token_strings[type], token_strings[lookahead]);
 	return el_MATCH_TOKEN_PARSE_ERROR;
 }
 
@@ -812,7 +834,10 @@ static bool el_is_lookahead(struct el_token_stream * token_stream, int type)
 
 static el_string el_copy_lookahead(struct el_token_stream * token_stream, struct el_linear_allocator * allocator)
 {
-	el_string source = el_lookahead(token_stream)->source;
+	struct el_token * lookahead = el_lookahead(token_stream);
+	if(!lookahead)
+		return NULL;
+	el_string source = lookahead->source;
 	int num_bytes = el_string_byte_size(source);
 	void * memory = el_linear_alloc(allocator, num_bytes);
 	return el_string_inplace_new(memory, num_bytes, source, -1);

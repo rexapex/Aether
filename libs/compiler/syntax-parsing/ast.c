@@ -26,7 +26,7 @@ static char const * expr_names[] = {
 
 	"N/A",
 	"N/A",
-	"slice",
+	"list",
 
 	"args",
 
@@ -102,13 +102,13 @@ static void el_ast_print_expr(struct el_ast_expression * e, int indent)
 	case el_AST_EXPR_DIV:
 	case el_AST_EXPR_DOT:
 	case el_AST_EXPR_FUNCTION_CALL:
-	case el_AST_EXPR_SLICE_INDEX:
+	case el_AST_EXPR_LIST_INDEX:
 		printf("%s\n", expr_names[e->type]);
 		el_ast_print_expr(e->binary_op.lhs, indent + indent_incr);
 		el_ast_print_expr(e->binary_op.rhs, indent + indent_incr);
 		break;
 	case el_AST_EXPR_ARGUMENTS:
-	case el_AST_EXPR_SLICE_LITERAL:
+	case el_AST_EXPR_LIST_LITERAL:
 		printf("%s\n", expr_names[e->type]);
 		el_ast_print_expr_list(e->expression_list, indent + indent_incr);
 		break;

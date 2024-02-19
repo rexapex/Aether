@@ -33,11 +33,11 @@ enum el_ast_expression_type
 	el_AST_EXPR_DOT,
 
 	el_AST_EXPR_FUNCTION_CALL,
-	el_AST_EXPR_SLICE_INDEX,
+	el_AST_EXPR_LIST_INDEX,
 
 	el_AST_EXPR_NUMBER_LITERAL,
 	el_AST_EXPR_STRING_LITERAL,
-	el_AST_EXPR_SLICE_LITERAL,
+	el_AST_EXPR_LIST_LITERAL,
 
 	el_AST_EXPR_ARGUMENTS,
 
@@ -59,7 +59,7 @@ struct el_ast_var_type
 		int native_type;
 		el_string custom_type;
 	};
-	int num_dimensions; // 0 for single, 1 for slice, 2 for 2-dimensional slice, etc.
+	int num_dimensions; // 0 for single, 1 for list, 2 for 2-dimensional list, etc.
 };
 
 struct el_ast_var_decl
