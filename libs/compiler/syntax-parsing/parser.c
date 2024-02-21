@@ -244,6 +244,7 @@ static int el_parse_code_block(struct el_token_stream * token_stream, struct el_
 		return el_ALLOCATION_ERROR;
 
 	err = err || el_match_token(token_stream, el_BLOCK_START);
+	err = err || el_match_token(token_stream, el_END_LINE);
 	err = err || el_parse_code_block_statements(token_stream, allocator, list);
 	err = err || el_match_token(token_stream, el_BLOCK_END);
 	err = err || el_parse_new_line(token_stream);
@@ -306,6 +307,7 @@ static int el_parse_code_block_statement(struct el_token_stream * token_stream, 
 		fprintf(stderr, "Expected code block statement (let/return/if), got %s\n", lookahead ? lookahead->source : "<no more tokens>");
 		return el_EXPECTED_BLOCK_STATEMENT_PARSE_ERROR;
 	}
+	err = err || el_match_token(token_stream, el_END_LINE);
 	return err;
 }
 
@@ -495,6 +497,8 @@ static int el_parse_data_block(struct el_token_stream * token_stream, struct el_
 
 	err = err || el_match_token(token_stream, el_IDENTIFIER);
 	err = err || el_match_token(token_stream, el_BLOCK_START);
+	if(!el_is_lookahead(token_stream, el_BLOCK_END))
+		err = err || el_match_token(token_stream, el_END_LINE);
 	err = err || el_parse_data_block_statements(token_stream, allocator, data_block);
 	err = err || el_match_token(token_stream, el_BLOCK_END);
 	err = err || el_parse_new_line(token_stream);
@@ -527,6 +531,7 @@ static int el_parse_data_block_statement(struct el_token_stream * token_stream, 
 		return el_ALLOCATION_ERROR;
 	err = err || el_match_token(token_stream, el_IDENTIFIER);
 	err = err || el_parse_type(token_stream, allocator, &var_decl->type);
+	err = err || el_match_token(token_stream, el_END_LINE);
 	return err;
 }
 
