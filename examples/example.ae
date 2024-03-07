@@ -1,0 +1,42 @@
+struct Complex { // Comment 1
+	r float
+	i float
+}
+
+struct Complex2 {}
+
+// Comment 2
+fn main(args [string]) -> int {
+	//print("Hello World!")
+	let xs = [ 0, 1, 2 ]
+	let ys = double(xs)
+
+	let c1 = 0
+	let c2 Complex = update(c1)
+
+	let y int = (1 + 2 + 3)
+
+	let x = a.b.c
+}
+
+fn double(list [int]) -> [int] {
+	return list
+}
+
+fn update(c Complex) -> Complex {
+	let ack = c.r * 2 - c.i
+	return c
+}
+
+fn add(a int, b int) -> int {
+	return a + b
+}
+
+//fn add_10(a int) -> int = add(10)
+
+//fn factorial(x int) -> int {
+//	return match(x) {
+//		0 -> 1
+//		x -> x * factorial(x - 1)
+//	}
+//}
