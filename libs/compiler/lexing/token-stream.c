@@ -59,7 +59,7 @@ char const * token_strings[el_token_type_count] = {
 	"->"              // el_RETURNS_OPERATOR
 };
 
-static_assert(ARRAY_SIZE(token_strings) == el_token_type_count, "Lexer's token_strings array is not up-to-date with el_token_type");
+_Static_assert(ARRAY_SIZE(token_strings) == el_token_type_count, "Lexer's token_strings array is not up-to-date with el_token_type");
 
 void el_token_stream_delete(struct el_token_stream * stream)
 {
