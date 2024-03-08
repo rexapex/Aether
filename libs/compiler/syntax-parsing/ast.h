@@ -3,6 +3,8 @@
 #include <compiler/lexing/token-stream.h>
 #include <containers/string.h>
 
+struct el_symbol;
+
 enum el_ast_statement_type
 {
 	el_AST_NODE_DATA_BLOCK,
@@ -53,17 +55,19 @@ struct el_ast_statement_list
 
 struct el_ast_var_type
 {
-	bool is_native;
 	union
 	{
 		int native_type;
 		el_string custom_type;
 	};
 	int num_dimensions; // 0 for single, 1 for list, 2 for 2-dimensional list, etc.
+	bool is_native;
 };
 
 struct el_ast_var_decl
 {
+	struct el_symbol * symbol;
+
 	el_string name;
 	struct el_ast_var_type type;
 };
@@ -98,6 +102,8 @@ struct el_ast_expression
 
 struct el_ast_data_block
 {
+	struct el_symbol * symbol;
+
 	el_string name;
 	struct el_ast_var_decl * var_declarations;
 	int max_num_var_declarations;
@@ -113,6 +119,8 @@ struct el_ast_parameter_list
 
 struct el_ast_function_definition
 {
+	struct el_symbol * symbol;
+
 	el_string name;
 	struct el_ast_parameter_list parameter_list;
 	struct el_ast_var_type return_type;

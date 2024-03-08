@@ -5,6 +5,7 @@
 #include <compiler/lexing/lexer.h>
 #include <compiler/syntax-parsing/ast.h>
 #include <compiler/syntax-parsing/parser.h>
+#include <compiler/semantic-analysis/analyser.h>
 
 int main(int argc, char const * argv[])
 {
@@ -23,6 +24,8 @@ int main(int argc, char const * argv[])
 		goto free_token_stream;
 
 	struct el_ast ast = el_parse_token_stream(&token_stream);
+
+	el_analyse_ast(&ast);
 
 	el_ast_delete(&ast);
 

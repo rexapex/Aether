@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_library(el_lib_compiler "lexing/lexer.h" "lexing/lexer.c" "lexing/token-stream.h" "lexing/token-stream.c" "syntax-parsing/parser.c" "syntax-parsing/parser.h" "syntax-parsing/ast.h" "syntax-parsing/ast.c" "error.h")
+add_library(el_lib_compiler "lexing/lexer.h" "lexing/lexer.c" "lexing/token-stream.h" "lexing/token-stream.c" "syntax-parsing/parser.c" "syntax-parsing/parser.h" "syntax-parsing/ast.h" "syntax-parsing/ast.c" "error.h" "semantic-analysis/analyser.c" "semantic-analysis/analyser.h" "symbols/symbol.h" "symbols/symbol.c")
 
 if(CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET el_lib_compiler PROPERTY C_STANDARD 17)
