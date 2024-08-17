@@ -16,6 +16,8 @@ enum el_token_type
 
 	el_INT_TYPE,
 	el_FLOAT_TYPE,
+	el_STRING_TYPE,
+	el_BOOL_TYPE,
 
 	el_FNC_KEYWORD,
 	el_DAT_KEYWORD,

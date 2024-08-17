@@ -1,4 +1,6 @@
 #include "ast.h"
+#include <compiler/lexing/token-stream.h>
+#include <compiler/symbols/symbol.h>
 #include <allocators/fmalloc.h>
 #include <containers/string.h>
 #include <stdio.h>
@@ -53,10 +55,10 @@ static void el_ast_print_var_type(struct el_ast_var_type * t)
 			printf("void");
 			break;
 		case el_INT_TYPE:
-			printf("int");
-			break;
 		case el_FLOAT_TYPE:
-			printf("float");
+		case el_STRING_TYPE:
+		case el_BOOL_TYPE:
+			printf("%s", token_strings[t->native_type]);
 			break;
 		default:
 			assert(false);
@@ -84,6 +86,59 @@ static void el_ast_print_expr_list(struct el_ast_expression_list * l, int indent
 	}
 }
 
+static void el_ast_print_name_and_type(char const * name, struct el_symbol_type * symbol_type, char delimiter)
+{
+	printf("%s", name);
+	if(symbol_type)
+	{
+		printf(" {");
+		switch(symbol_type->type)
+		{
+		case el_SYMBOL_TYPE_NATIVE:
+		{
+			printf("%s", token_strings[symbol_type->native_type]);
+			break;
+		}
+		case el_SYMBOL_TYPE_CUSTOM:
+		{
+			printf("%s", symbol_type->custom_type->name);
+			break;
+		}
+		case el_SYMBOL_TYPE_FUNC_DEF:
+		{
+			printf("fn %d", symbol_type->function_type.num_curried_types);
+			break;
+		}
+		case el_SYMBOL_TYPE_STRUCT_DEF:
+		{
+			printf("struct");
+			struct el_struct_type * struct_type = &symbol_type->struct_type;
+			for(int i = 0; i < struct_type->num_field_types; ++i)
+			{
+				el_ast_print_name_and_type("", &struct_type->field_types[i], '\0');
+			}
+			break;
+		}
+		case el_SYMBOL_TYPE_ARGS:
+		{
+			printf("args %d", symbol_type->args_type.num_curried_types);
+			break;
+		}
+		case el_SYMBOL_TYPE_UNKNOWN:
+		{
+			printf("?");
+			break;
+		}
+		}
+		for(int i = 0; i < symbol_type->num_dimensions; ++i)
+		{
+			printf("[]");
+		}
+		printf("}");
+	}
+	printf("%c", delimiter);
+}
+
 static void el_ast_print_expr(struct el_ast_expression * e, int indent)
 {
 	el_ast_print_indent(indent);
@@ -103,23 +158,23 @@ static void el_ast_print_expr(struct el_ast_expression * e, int indent)
 	case el_AST_EXPR_DOT:
 	case el_AST_EXPR_FUNCTION_CALL:
 	case el_AST_EXPR_LIST_INDEX:
-		printf("%s\n", expr_names[e->type]);
+		el_ast_print_name_and_type(expr_names[e->type], e->symbol_type, '\n');
 		el_ast_print_expr(e->binary_op.lhs, indent + indent_incr);
 		el_ast_print_expr(e->binary_op.rhs, indent + indent_incr);
 		break;
 	case el_AST_EXPR_ARGUMENTS:
 	case el_AST_EXPR_LIST_LITERAL:
-		printf("%s\n", expr_names[e->type]);
+		el_ast_print_name_and_type(expr_names[e->type], e->symbol_type, '\n');
 		el_ast_print_expr_list(e->expression_list, indent + indent_incr);
 		break;
 	case el_AST_EXPR_NUMBER_LITERAL:
-		printf("%s", e->number_literal);
+		el_ast_print_name_and_type(e->number_literal, e->symbol_type, '\n');
 		break;
 	case el_AST_EXPR_STRING_LITERAL:
-		printf("%s", e->string_literal);
+		el_ast_print_name_and_type(e->string_literal, e->symbol_type, '\n');
 		break;
 	case el_AST_EXPR_IDENTIFIER:
-		printf("%s", e->identifier);
+		el_ast_print_name_and_type(e->identifier, e->symbol_type, '\n');
 		break;
 	}
 	printf("\n");
@@ -134,13 +189,12 @@ static void el_ast_print_statement_list(struct el_ast_statement_list * list, int
 		{
 		case el_AST_NODE_DATA_BLOCK:
 			el_ast_print_indent(indent);
-			printf("dat %s\n", s->data_block.name);
+			el_ast_print_name_and_type(s->data_block.name, &s->data_block.symbol->type, '\n');
 			for(int j = 0; j < s->data_block.num_var_declarations; ++j)
 			{
 				el_ast_print_indent(indent + indent_incr);
 				struct el_ast_var_decl * var_decl = &s->data_block.var_declarations[j];
-				el_ast_print_var_type(&var_decl->type);
-				printf(" %s\n", var_decl->name);
+				el_ast_print_name_and_type(var_decl->name, &var_decl->symbol->type, '\n');
 			}
 			break;
 		case el_AST_NODE_FUNCTION_DEFINITION:

@@ -27,6 +27,8 @@ int main(int argc, char const * argv[])
 
 	el_analyse_ast(&ast);
 
+	el_ast_print(&ast);
+
 	el_ast_delete(&ast);
 
 free_token_stream:

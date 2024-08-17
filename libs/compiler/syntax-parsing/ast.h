@@ -4,6 +4,7 @@
 #include <containers/string.h>
 
 struct el_symbol;
+struct el_symbol_type;
 
 enum el_ast_statement_type
 {
@@ -83,6 +84,8 @@ struct el_ast_expression_list
 
 struct el_ast_expression
 {
+	struct el_symbol_type * symbol_type;
+
 	int type;
 	union
 	{

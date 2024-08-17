@@ -16,6 +16,7 @@ void * el_linear_alloc(struct el_linear_allocator * allocator, size_t num_bytes)
 
 	unsigned char * ptr = allocator->memory + allocator->size;
 	allocator->size += num_bytes;
+	memset(ptr, 0, num_bytes); // TODO - Remove
 	return ptr;
 }
 

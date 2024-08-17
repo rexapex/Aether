@@ -1,23 +1,9 @@
 struct Complex { // Comment 1
-	r float
-	i float
+	r int
+	i int
 }
 
 struct Complex2 {}
-
-// Comment 2
-fn main(args [string]) -> int {
-	//print("Hello World!")
-	let xs = [ 0, 1, 2 ]
-	let ys = double(xs)
-
-	let c1 = 0
-	let c2 Complex = update(c1)
-
-	let y int = (1 + 2 + 3)
-
-	let x = a.b.c
-}
 
 fn double(list [int]) -> [int] {
 	return list
@@ -26,6 +12,31 @@ fn double(list [int]) -> [int] {
 fn update(c Complex) -> Complex {
 	let ack = c.r * 2 - c.i
 	return c
+}
+
+// Comment 2
+fn main(args [string]) -> int {
+	//println("Hello World!")
+	let xs = [0, 1, 2]
+	let ys = double(xs)
+
+	let s = "foo"
+
+	let c1 = 0
+	let c2 Complex = update(c1)
+
+	let y int = (1 + 2 + 3)
+
+	//let zs = []
+
+	//let x = a.b.c // TODO - Chained dot operators currently eval r-to-l instead of l-to-r
+
+	// Chaining monads
+	//let a = try b->c->d
+	//let a = b->c->d else 0
+	//let y = xs->(x) {
+	//	println(x)
+	//}
 }
 
 fn add(a int, b int) -> int {

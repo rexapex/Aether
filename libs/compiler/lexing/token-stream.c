@@ -18,6 +18,8 @@ char const * token_strings[el_token_type_count] = {
 
 	"int",            // el_INT_TYPE
 	"float",          // el_FLOAT_TYPE
+	"string",         // el_STRING_TYPE
+	"bool",           // el_BOOL_TYPE
 
 	"fn",             // el_FNC_KEYWORD
 	"struct",         // el_DAT_KEYWORD

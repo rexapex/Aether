@@ -83,7 +83,7 @@ struct el_ast el_parse_token_stream(struct el_token_stream * token_stream)
 		.root.max_num_statements = MAX_NUM_NODES_PER_NODE_LIST,
 		.root.num_statements = 0
 	};
-	ast.root.statements = el_linear_alloc(&ast.allocator, sizeof(struct el_ast_statement) * MAX_NUM_NODES_PER_NODE_LIST);
+	ast.root.statements = el_linear_alloc(&ast.allocator, sizeof(*ast.root.statements) * MAX_NUM_NODES_PER_NODE_LIST);
 
 	if(!ast.root.statements)
 	{
@@ -95,10 +95,6 @@ struct el_ast el_parse_token_stream(struct el_token_stream * token_stream)
 	{
 		fprintf(stderr, "Failed to parse token stream\n");
 		el_ast_delete(&ast);
-	}
-	else
-	{
-		el_ast_print(&ast);
 	}
 
 	return ast;
@@ -192,7 +188,7 @@ static int el_parse_parameter_list(struct el_token_stream * token_stream, struct
 {
 	DEBUG_PRODUCTION("el_parse_parameter_list");
 	int err = 0;
-	parameter_list->parameters = el_linear_alloc(allocator, sizeof(struct el_ast_var_decl) * MAX_NUM_PARAMS_PER_PARAM_LIST);
+	parameter_list->parameters = el_linear_alloc(allocator, sizeof(*parameter_list->parameters) * MAX_NUM_PARAMS_PER_PARAM_LIST);
 	if(!parameter_list->parameters)
 		return el_ALLOCATION_ERROR;
 	parameter_list->max_num_parameters = MAX_NUM_PARAMS_PER_PARAM_LIST;
@@ -239,7 +235,7 @@ static int el_parse_code_block(struct el_token_stream * token_stream, struct el_
 	int err = 0;
 	list->num_statements = 0;
 	list->max_num_statements = MAX_NUM_NODES_PER_NODE_LIST;
-	list->statements = el_linear_alloc(allocator, sizeof(struct el_ast_statement) * list->max_num_statements);
+	list->statements = el_linear_alloc(allocator, sizeof(*list->statements) * list->max_num_statements);
 	if(!list->statements)
 		return el_ALLOCATION_ERROR;
 
@@ -347,7 +343,7 @@ static int el_parse_if_statement(struct el_token_stream * token_stream, struct e
 	
 	if_statement->num_elif_statements = 0;
 	if_statement->max_num_elif_statements = MAX_NUM_ELIFS_PER_IF;
-	if_statement->elif_statements = el_linear_alloc(allocator, sizeof(struct el_ast_elif_statement) * if_statement->max_num_elif_statements);
+	if_statement->elif_statements = el_linear_alloc(allocator, sizeof(*if_statement->elif_statements) * if_statement->max_num_elif_statements);
 	if(!if_statement->elif_statements)
 		return el_ALLOCATION_ERROR;
 
@@ -385,7 +381,7 @@ static int el_parse_else_statement(struct el_token_stream * token_stream, struct
 {
 	DEBUG_PRODUCTION("el_parse_else_statement");
 	int err = 0;
-	parent->else_statement = el_linear_alloc(allocator, sizeof(struct el_ast_statement_list));
+	parent->else_statement = el_linear_alloc(allocator, sizeof *parent->else_statement);
 	if(!parent->else_statement)
 		return el_ALLOCATION_ERROR;
 	err = err || el_match_token(token_stream, el_ELSE_KEYWORD);
@@ -486,7 +482,7 @@ static int el_parse_data_block(struct el_token_stream * token_stream, struct el_
 
 	data_block->num_var_declarations = 0;
 	data_block->max_num_var_declarations = MAX_NUM_VARS_PER_DATA_BLOCK;
-	data_block->var_declarations = el_linear_alloc(allocator, sizeof(struct el_ast_var_decl) * data_block->max_num_var_declarations);
+	data_block->var_declarations = el_linear_alloc(allocator, sizeof(*data_block->var_declarations) * data_block->max_num_var_declarations);
 	if(!data_block->var_declarations)
 		return el_ALLOCATION_ERROR;
 
@@ -582,6 +578,18 @@ static int el_parse_type(struct el_token_stream * token_stream, struct el_linear
 		var_type->is_native = true;
 		var_type->native_type = el_FLOAT_TYPE;
 		err = err || el_match_token(token_stream, el_FLOAT_TYPE);
+	}
+	else if(el_is_lookahead(token_stream, el_STRING_TYPE))
+	{
+		var_type->is_native = true;
+		var_type->native_type = el_STRING_TYPE;
+		err = err || el_match_token(token_stream, el_STRING_TYPE);
+	}
+	else if(el_is_lookahead(token_stream, el_BOOL_TYPE))
+	{
+		var_type->is_native = true;
+		var_type->native_type = el_BOOL_TYPE;
+		err = err || el_match_token(token_stream, el_BOOL_TYPE);
 	}
 	else
 	{
@@ -781,19 +789,20 @@ int el_convert_to_binary_op(struct el_linear_allocator * allocator, struct el_as
 int el_new_expr_list(struct el_linear_allocator * allocator, struct el_ast_expression * expression, int type)
 {
 	expression->type = type;
-	expression->expression_list = el_linear_alloc(allocator, sizeof(struct el_ast_expression_list));
-	if(!expression->expression_list)
+	expression->expression_list = el_linear_alloc(allocator, sizeof *expression->expression_list);
+	struct el_ast_expression_list * expression_list = expression->expression_list;
+	if(!expression_list)
 	{
 		return el_ALLOCATION_ERROR;
 	}
-	expression->expression_list->expressions = el_linear_alloc(allocator, sizeof(struct el_ast_expression) * MAX_NUM_EXPRS_PER_EXPR_LIST);
-	if(!expression->expression_list->expressions)
+	expression_list->expressions = el_linear_alloc(allocator, sizeof(*expression_list->expressions) * MAX_NUM_EXPRS_PER_EXPR_LIST);
+	if(!expression_list->expressions)
 	{
 		// NOTE - Don't need to call ffree as ast will be freed on error
 		return el_ALLOCATION_ERROR;
 	}
-	expression->expression_list->max_num_expressions = MAX_NUM_EXPRS_PER_EXPR_LIST;
-	expression->expression_list->num_expressions = 0;
+	expression_list->max_num_expressions = MAX_NUM_EXPRS_PER_EXPR_LIST;
+	expression_list->num_expressions = 0;
 	return 0;
 }
 
