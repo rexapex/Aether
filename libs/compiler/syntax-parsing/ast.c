@@ -76,6 +76,39 @@ static void el_ast_print_var_type(struct el_ast_var_type * t)
 
 static void el_ast_print_expr(struct el_ast_expression * e, int indent);
 
+static void el_ast_print_pattern(struct el_ast_pattern * p, int indent)
+{
+	el_ast_print_indent(indent);
+	switch(p->type)
+	{
+	case el_PATTERN_WILDCARD:
+		printf("_");
+		break;
+	case el_PATTERN_NUMBER_LITERAL:
+		printf("%s", p->number_literal);
+		break;
+	case el_PATTERN_STRING_LITERAL:
+		printf("%s", p->string_literal);
+		break;
+	case el_PATTERN_LIST:
+		printf("list");
+		break;
+	case el_PATTERN_IDENTIFIER:
+		printf("%s", p->identifier);
+		break;
+	default:
+		assert(false);
+		break;
+	}
+}
+
+static void el_ast_print_match_clause(struct el_ast_match_clause * c, int indent)
+{
+	el_ast_print_pattern(&c->pattern, indent);
+	printf(" ->\n");
+	el_ast_print_expr(&c->expression, indent + indent_incr);
+}
+
 static void el_ast_print_expr_list(struct el_ast_expression_list * l, int indent)
 {
 	for(int i = 0; i < l->num_expressions; ++i)
@@ -120,6 +153,17 @@ static void el_ast_print_expr(struct el_ast_expression * e, int indent)
 		break;
 	case el_AST_EXPR_IDENTIFIER:
 		printf("%s", e->identifier);
+		break;
+	case el_AST_EXPR_MATCH:
+		printf("match\n");
+		el_ast_print_expr(e->match.argument, indent + indent_incr);
+		for(int i = 0; i < e->match.num_clauses; ++i)
+		{
+			el_ast_print_match_clause(&e->match.clauses[i], indent + indent_incr);
+		}
+		break;
+	default:
+		assert(false);
 		break;
 	}
 	printf("\n");

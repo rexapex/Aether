@@ -17,6 +17,19 @@ fn main(args [string]) -> int {
 	let y int = (1 + 2 + 3)
 
 	let x = a.b.c
+
+	let foo = match (c1) {
+		0 -> "Zero"
+		1 -> "One"
+		x -> std.tostring(x)
+	}
+
+	//let bar = match (xs) {
+	//	[]              -> [0, 1, 2]
+	//	[fst, snd, ...] -> [snd]
+	//	[head, ...]     -> [head]
+	//	_               -> []
+	//}
 }
 
 fn double(list [int]) -> [int] {

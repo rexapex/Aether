@@ -42,6 +42,19 @@ enum el_ast_expression_type
 	el_AST_EXPR_ARGUMENTS,
 
 	el_AST_EXPR_IDENTIFIER,
+
+	el_AST_EXPR_MATCH
+};
+
+enum el_ast_pattern_type
+{
+	el_PATTERN_WILDCARD,
+
+	el_PATTERN_NUMBER_LITERAL,
+	el_PATTERN_STRING_LITERAL,
+	el_PATTERN_LIST,
+
+	el_PATTERN_IDENTIFIER
 };
 
 struct el_ast_statement_list
@@ -68,6 +81,19 @@ struct el_ast_var_decl
 	struct el_ast_var_type type;
 };
 
+struct el_ast_pattern
+{
+	int type;
+	union
+	{
+		el_string number_literal;
+		el_string string_literal;
+		el_string identifier;
+		// TODO - List pattern
+		// TODO - Tuple pattern
+	};
+};
+
 struct el_ast_expression;
 
 struct el_ast_expression_list
@@ -76,6 +102,8 @@ struct el_ast_expression_list
 	int max_num_expressions;
 	int num_expressions;
 };
+
+struct el_ast_match_clause;
 
 struct el_ast_expression
 {
@@ -93,7 +121,21 @@ struct el_ast_expression
 			struct el_ast_expression * lhs;
 			struct el_ast_expression * rhs;
 		} binary_op;
+
+		struct
+		{
+			struct el_ast_expression * argument;
+			struct el_ast_match_clause * clauses;
+			int max_num_clauses;
+			int num_clauses;
+		} match;
 	};
+};
+
+struct el_ast_match_clause
+{
+	struct el_ast_pattern pattern;
+	struct el_ast_expression expression;
 };
 
 struct el_ast_data_block

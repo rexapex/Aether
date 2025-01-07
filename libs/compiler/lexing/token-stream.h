@@ -26,6 +26,7 @@ enum el_token_type
 	el_IF_KEYWORD,
 	el_ELIF_KEYWORD,
 	el_ELSE_KEYWORD,
+	el_MATCH_KEYWORD,
 
 	el_BLOCK_START,
 	el_BLOCK_END,
@@ -55,6 +56,9 @@ enum el_token_type
 	el_GEQUALS_COMPARATOR,
 
 	el_RETURNS_OPERATOR,
+
+	el_WILDCARD_IDENTIFIER,
+	el_SPREAD_OPERATOR,
 
 	el_token_type_count
 };

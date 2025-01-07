@@ -28,6 +28,7 @@ char const * token_strings[el_token_type_count] = {
 	"if",             // el_IF_KEYWORD
 	"elif",           // el_ELIF_KEYWORD
 	"else",           // el_ELSE_KEYWORD
+	"match",          // el_MATCH_KEYWORD
 
 	"{",              // el_BLOCK_START
 	"}",              // el_BLOCK_END
@@ -56,7 +57,10 @@ char const * token_strings[el_token_type_count] = {
 	"<=",             // el_LEQUALS_COMPARATOR
 	">=",             // el_GEQUALS_COMPARATOR
 
-	"->"              // el_RETURNS_OPERATOR
+	"->",             // el_RETURNS_OPERATOR
+
+	"_",              // el_WILDCARD_IDENTIFIER
+	"..."             // el_SPREAD_OPERATOR
 };
 
 _Static_assert(ARRAY_SIZE(token_strings) == el_token_type_count, "Lexer's token_strings array is not up-to-date with el_token_type");

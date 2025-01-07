@@ -23,6 +23,7 @@
 #define MAX_NUM_PARAMS_PER_PARAM_LIST 8
 #define MAX_NUM_ELIFS_PER_IF 8
 #define MAX_NUM_VARS_PER_DATA_BLOCK 16
+#define MAX_NUM_PATTERNS_PER_MATCH 8
 
 static int el_parse_new_line(struct el_token_stream * token_stream);
 static int el_parse_new_lines(struct el_token_stream * token_stream);
@@ -64,6 +65,9 @@ static int el_parse_boolean_and_expr(struct el_token_stream * token_stream, stru
 static int el_parse_add_or_sub_expr(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression);
 static int el_parse_mult_or_div_expr(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression);
 static int el_parse_factor_expr(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression);
+static int el_parse_match_expr(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression);
+
+static int el_parse_pattern(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_pattern * pattern);
 
 static int el_convert_to_binary_op(struct el_linear_allocator * allocator, struct el_ast_expression * expression, int type);
 static int el_new_expr_list(struct el_linear_allocator * allocator, struct el_ast_expression * expression, int type);
@@ -755,6 +759,10 @@ static int el_parse_factor_expr(struct el_token_stream * token_stream, struct el
 		err = err || el_parse_arguments(token_stream, allocator, expression->expression_list);
 		err = err || el_match_token(token_stream, el_LIST_END);
 	}
+	else if(el_is_lookahead(token_stream, el_MATCH_KEYWORD))
+	{
+		err = err || el_parse_match_expr(token_stream, allocator, expression);
+	}
 	else
 	{
 		fprintf(stderr, "Expected a factor expression\n");
@@ -763,7 +771,108 @@ static int el_parse_factor_expr(struct el_token_stream * token_stream, struct el
 	return err;
 }
 
-int el_convert_to_binary_op(struct el_linear_allocator * allocator, struct el_ast_expression * expression, int type)
+static int el_parse_match_expr(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_expression * expression)
+{
+	DEBUG_PRODUCTION("el_parse_match_expr");
+	int err = 0;
+	expression->type = el_AST_EXPR_MATCH;
+	expression->match.argument = el_linear_alloc(allocator, sizeof *expression);
+	if(!expression->match.argument)
+		return el_ALLOCATION_ERROR;
+	err = err || el_match_token(token_stream, el_MATCH_KEYWORD);
+	err = err || el_parse_expr(token_stream, allocator, expression->match.argument);
+	err = err || el_match_token(token_stream, el_BLOCK_START);
+	err = err || el_match_token(token_stream, el_END_LINE);
+
+	// Match patterns in the match expression body
+	expression->match.num_clauses = 0;
+	expression->match.max_num_clauses = MAX_NUM_PATTERNS_PER_MATCH;
+	expression->match.clauses = el_linear_alloc(allocator, sizeof(*expression->match.clauses) * expression->match.max_num_clauses);
+	for(int i = 0; i < expression->match.max_num_clauses; ++i)
+	{
+		expression->match.num_clauses++;
+		struct el_ast_match_clause * clause = &expression->match.clauses[i];
+		// Match the pattern
+		err = err || el_parse_pattern(token_stream, allocator, &clause->pattern);
+		err = err || el_match_token(token_stream, el_RETURNS_OPERATOR);
+		// Match the expression
+		if(el_is_lookahead(token_stream, el_BLOCK_START))
+		{
+			// TODO - Not every statement is allowed inside a match code block, e.g. return statement
+			assert(false);
+		}
+		else
+		{
+			err = err || el_parse_expr(token_stream, allocator, &clause->expression);
+		}
+
+		el_match_token(token_stream, el_END_LINE);
+
+		// Break out of match expression at final BLOCK_END
+		if(el_is_lookahead(token_stream, el_BLOCK_END))
+			break;
+	}
+	err = err || el_match_token(token_stream, el_BLOCK_END);
+	return err;
+}
+
+static int el_parse_pattern(struct el_token_stream * token_stream, struct el_linear_allocator * allocator, struct el_ast_pattern * pattern)
+{
+	int err = 0;
+	if(el_is_lookahead(token_stream, el_WILDCARD_IDENTIFIER))
+	{
+		pattern->type = el_PATTERN_WILDCARD;
+		err = err || el_match_token(token_stream, el_WILDCARD_IDENTIFIER);
+	}
+	else if(el_is_lookahead(token_stream, el_NUMBER_LITERAL))
+	{
+		pattern->type = el_PATTERN_NUMBER_LITERAL;
+		pattern->number_literal = el_copy_lookahead(token_stream, allocator);
+		if(!pattern->number_literal)
+			return el_ALLOCATION_ERROR;
+		err = err || el_match_token(token_stream, el_NUMBER_LITERAL);
+	}
+	else if(el_is_lookahead(token_stream, el_STRING_LITERAL))
+	{
+		pattern->type = el_PATTERN_STRING_LITERAL;
+		pattern->string_literal = el_copy_lookahead(token_stream, allocator);
+		if(!pattern->string_literal)
+			return el_ALLOCATION_ERROR;
+		err = err || el_match_token(token_stream, el_STRING_LITERAL);
+	}
+	else if(el_is_lookahead(token_stream, el_IDENTIFIER))
+	{
+		pattern->type = el_PATTERN_IDENTIFIER;
+		struct el_ast_expression expression;
+		err = err || el_parse_local_identifier(token_stream, allocator, &expression);
+		assert(expression.type == el_AST_EXPR_IDENTIFIER);
+		pattern->identifier = expression.identifier;
+	}
+	else if(el_is_lookahead(token_stream, el_LIST_START))
+	{
+		pattern->type = el_PATTERN_LIST;
+		err = err || el_match_token(token_stream, el_LIST_START);
+		assert(false);
+		/*for(int i = 0; i < max_num_list_matches; ++i)
+		{
+			if(el_is_lookahead(token_stream, el_SPREAD_OPERATOR))
+			{
+				el_match_token(token_stream, el_SPREAD_OPERATOR);
+			}
+			else
+			{
+				err = err || el_parse_local_identifier(token_stream, allocator, ...);
+				if(el_is_lookahead(token_stream, el_SPREAD_OPERATOR))
+				{
+				}
+			}
+		}*/
+		err = err || el_match_token(token_stream, el_LIST_END);
+	}
+	return err;
+}
+
+static int el_convert_to_binary_op(struct el_linear_allocator * allocator, struct el_ast_expression * expression, int type)
 {
 	struct el_ast_expression lhs = *expression;
 	expression->type = type;
@@ -778,7 +887,7 @@ int el_convert_to_binary_op(struct el_linear_allocator * allocator, struct el_as
 	return 0;
 }
 
-int el_new_expr_list(struct el_linear_allocator * allocator, struct el_ast_expression * expression, int type)
+static int el_new_expr_list(struct el_linear_allocator * allocator, struct el_ast_expression * expression, int type)
 {
 	expression->type = type;
 	expression->expression_list = el_linear_alloc(allocator, sizeof(struct el_ast_expression_list));
